@@ -32,15 +32,9 @@
             </label>
 
             <div class="image-container">
-                <img src="images/Ebru Gündeş - Âşık.png" class="song-img" alt="Song Image" id="img-1">
-                <img src="images/Atiye - Salla.png" class="song-img" alt="Song Image" id="img-2">
-                <img src="images/Semicenk - Mesafe.png" class="song-img" alt="Song Image" id="img-3">
-                <img src="images/Can Toğrulca - Boș Yere.png" class="song-img" alt="Song Image" id="img-4">
-                <img src="images/Semicenk - Batık Gemi.png" class="song-img" alt="Song Image" id="img-5">
-                <img src="images/Reynmen - Renklensin.png" class="song-img" alt="Song Image" id="img-6">
-                <img src="images/Semicenk & Rast - Canın Sağ Olsun.png" class="song-img" alt="Song Image" id="img-7">
-                <img src="images/Semicenk - İlkbaharım Kışa Döndü.png" class="song-img" alt="Song Image" id="img-8">
+                <!-- Images will be shown dynamically -->
             </div>
+
             <div class="text" id="current-song-title"><span id="song-title">-Musik Auswählen-</span></div>
             <div class="wave-container">
                 <ul class="wave-menu">
@@ -74,167 +68,159 @@
     </div>
     
     <script>
-        const themeSwitch = document.getElementById('switch');
-        themeSwitch.addEventListener('change', () => {
-            if (themeSwitch.checked) {
-                document.body.style.backgroundColor = '#2F4F4F';
-                document.body.classList.add('dark-mode');
-            } else {
-                document.body.style.backgroundColor = '#FAF3E0';
-                document.body.classList.remove('dark-mode');
-            }
-        });
+        document.addEventListener('DOMContentLoaded', async () => {
+            const songListResponse = await fetch('songs.json');
+            const songs = await songListResponse.json();
+            const imageContainer = document.querySelector('.image-container');
+            const songListElement = document.getElementById('song-list');
+            const song = document.getElementById('song');
+            const progress = document.getElementById('progress');
+            const ctrlbutton = document.getElementById('ctrlbutton');
+            const songTitle = document.getElementById('song-title');
+            const waveMenu = document.querySelector('.wave-menu');
+            const check = document.getElementById('check');
+            const popup = document.getElementById('popup');
+            const mixbutton = document.getElementById('mixbutton');
 
-        const songs = [
-            {"src": "music/Ebru Gündeş - Âşık.mp3", "title": "Ebru Gündeş - Âşık", "imgId": "img-1"},
-            {"src": "music/Atiye - Salla.mp3", "title": "Atiye - Salla", "imgId": "img-2"},
-            {"src": "music/Semicenk - Mesafe.mp3", "title": "Semicenk - Mesafe", "imgId": "img-3"},
-            {"src": "music/Can Toğrulca - Boș Yere.mp3", "title": "Can Toğrulca - Boș Yere", "imgId": "img-4"},
-            {"src": "music/Semicenk - Batık Gemi.mp3", "title": "Semicenk - Batık Gemi", "imgId": "img-5"},
-            {"src": "music/Reynmen - Renklensin.mp3", "title": "Reynmen - Renklensin", "imgId": "img-6"},
-            {"src": "music/Semicenk & Rast - Canın Sağ Olsun.mp3", "title": "Semicenk & Rast - Canın Sağ Olsun", "imgId": "img-7"},
-            {"src": "music/Semicenk - İlkbaharım Kışa Döndü.mp3", "title": "Semicenk - İlkbaharım Kışa Döndü", "imgId": "img-8"},
-        ];
+            let currentSongIndex = 0;
+            let isShuffleMode = false;
+            let songHistory = [];
 
-        let currentSongIndex = 0;
-        let isShuffleMode = false;
-        let songHistory = [];
-        const mixbutton = document.getElementById("mixbutton");
-        const progress = document.getElementById("progress");
-        const song = document.getElementById("song");
-        const ctrlbutton = document.getElementById("ctrlbutton");
-        const songTitle = document.getElementById("song-title");
-        const waveMenu = document.querySelector(".wave-menu");
-        const check = document.getElementById('check');
-        const popup = document.getElementById('popup');
-        const songList = document.getElementById('song-list');
+            // Update image container
+            songs.forEach((song, index) => {
+                const img = document.createElement('img');
+                img.src = `images/${song.title}.png`;  // Adjust if necessary
+                img.className = 'song-img';
+                img.id = `img-${index + 1}`;
+                img.style.display = 'none';
+                imageContainer.appendChild(img);
+            });
 
-        song.onloadedmetadata = function() {
-            progress.max = song.duration;
-            progress.value = song.currentTime;
-        };
-
-        progress.oninput = function() {
-            song.currentTime = progress.value;
-        };
-
-        progress.onchange = function() {
-            song.play();
-        };
-
-        song.addEventListener('timeupdate', () => {
-            progress.value = song.currentTime;
-        });
-
-        function toggleMix() {
-            isShuffleMode = !isShuffleMode;
-            songHistory = []; // Leere die Historie, wenn der Modus gewechselt wird.
-            mixbutton.textContent = isShuffleMode ? "Nex" : "Mix";
-        }
-
-        function shuffleAndPlay() {
-            if (isShuffleMode) {
-                songHistory.push(currentSongIndex);
-                currentSongIndex = Math.floor(Math.random() * songs.length);
-                updateSong();
-            }
-        }
-
-        function playPause() {
-            if (song.paused) {
+            function updateSong() {
+                let songData = songs[currentSongIndex];
+                song.src = songData.src;
+                songTitle.textContent = songData.title;
+                song.load();
                 song.play();
                 ctrlbutton.textContent = "Pause";
                 waveMenu.classList.add('playing');
-            } else {
-                song.pause();
-                ctrlbutton.textContent = "Play";
-                waveMenu.classList.remove('playing');
+                document.querySelectorAll('.song-img').forEach(img => img.style.display = 'none');
+                document.getElementById(songData.imgId).style.display = 'block';
+                updateSongListHighlight();
             }
-        }
 
-        function prevTrack() {
-            if (isShuffleMode && songHistory.length > 0) {
-                currentSongIndex = songHistory.pop(); // Hole den letzten Index aus der Historie
-            } else {
-                currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+            function updateSongListHighlight() {
+                document.querySelectorAll('#song-list li').forEach((li, index) => {
+                    li.classList.remove('current-song');
+                    if (index === currentSongIndex) {
+                        li.classList.add('current-song');
+                    }
+                });
             }
-            updateSong();
-        }
 
-        function nextTrack() {
-            if (isShuffleMode) {
-                shuffleAndPlay();
-            } else {
-                currentSongIndex = (currentSongIndex + 1) % songs.length;
+            function populateSongList() {
+                songListElement.innerHTML = '';
+                const sortedSongs = [...songs].sort((a, b) => a.title.localeCompare(b.title));
+                sortedSongs.forEach((song, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = song.title;
+                    if (index === currentSongIndex) {
+                        li.classList.add('current-song');
+                    }
+                    li.addEventListener('click', () => {
+                        currentSongIndex = songs.findIndex(s => s.title === song.title);
+                        updateSong();
+                        popup.style.display = 'none';
+                        check.checked = false;
+                    });
+                    songListElement.appendChild(li);
+                });
+            }
+
+            function playPause() {
+                if (song.paused) {
+                    song.play();
+                    ctrlbutton.textContent = "Pause";
+                    waveMenu.classList.add('playing');
+                } else {
+                    song.pause();
+                    ctrlbutton.textContent = "Play";
+                    waveMenu.classList.remove('playing');
+                }
+            }
+
+            function prevTrack() {
+                if (isShuffleMode && songHistory.length > 0) {
+                    currentSongIndex = songHistory.pop();
+                } else {
+                    currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+                }
                 updateSong();
             }
-        }
 
-        function updateSong() {
-            let songData = songs[currentSongIndex];
-            song.src = songData.src;
-            songTitle.textContent = songData.title;
-            song.load();
-            song.play();
-            ctrlbutton.textContent = "Pause";
-            waveMenu.classList.add('playing');
-            document.querySelectorAll('.song-img').forEach(img => img.style.display = 'none');
-            document.getElementById(songData.imgId).style.display = 'block';
-            updateSongListHighlight();
-        }
-
-        function updateSongListHighlight() {
-            document.querySelectorAll('#song-list li').forEach((li, index) => {
-                li.classList.remove('current-song');
-                if (index === currentSongIndex) {
-                    li.classList.add('current-song');
-                }
-            });
-        }
-
-        function checkSongEnd() {
-            if (song.currentTime >= song.duration - 0.5) {
-                nextTrack();
-            }
-        }
-
-        setInterval(checkSongEnd, 1000);
-
-        song.onended = function() {
-            nextTrack(); 
-        };
-
-        function populateSongList() {
-            songList.innerHTML = '';  // Liste zurücksetzen
-            const sortedSongs = [...songs].sort((a, b) => a.title.localeCompare(b.title));
-            sortedSongs.forEach((song, index) => {
-                const li = document.createElement('li');
-                li.textContent = song.title;  // Nur den Titel anzeigen
-                if (index === currentSongIndex) {
-                    li.classList.add('current-song');
-                }
-                li.addEventListener('click', () => {
-                    currentSongIndex = songs.findIndex(s => s.title === song.title); // Finde den Original-Index
+            function nextTrack() {
+                if (isShuffleMode) {
+                    shuffleAndPlay();
+                } else {
+                    currentSongIndex = (currentSongIndex + 1) % songs.length;
                     updateSong();
-                    popup.style.display = 'none';
-                    check.checked = false;
-                });
-
-                songList.appendChild(li);
-            });
-        }
-
-
-        check.addEventListener('change', () => {
-            if (check.checked) {
-                populateSongList();
-                popup.style.display = 'flex';
-            } else {
-                popup.style.display = 'none';
+                }
             }
-        });
 
-        updateSong();
+            function toggleMix() {
+                isShuffleMode = !isShuffleMode;
+                songHistory = [];
+                mixbutton.textContent = isShuffleMode ? "Nex" : "Mix";
+            }
+
+            function shuffleAndPlay() {
+                if (isShuffleMode) {
+                    songHistory.push(currentSongIndex);
+                    currentSongIndex = Math.floor(Math.random() * songs.length);
+                    updateSong();
+                }
+            }
+
+            function checkSongEnd() {
+                if (song.currentTime >= song.duration - 0.5) {
+                    nextTrack();
+                }
+            }
+
+            setInterval(checkSongEnd, 1000);
+
+            song.onended = function() {
+                nextTrack();
+            };
+
+            song.onloadedmetadata = function() {
+                progress.max = song.duration;
+                progress.value = song.currentTime;
+            };
+
+            progress.oninput = function() {
+                song.currentTime = progress.value;
+            };
+
+            progress.onchange = function() {
+                song.play();
+            };
+
+            song.addEventListener('timeupdate', () => {
+                progress.value = song.currentTime;
+            });
+
+            check.addEventListener('change', () => {
+                if (check.checked) {
+                    populateSongList();
+                    popup.style.display = 'flex';
+                } else {
+                    popup.style.display = 'none';
+                }
+            });
+
+            updateSong();
+        });
     </script>
 </body>
 </html>
