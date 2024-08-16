@@ -138,6 +138,7 @@
             }
 
             function playPause() {
+                console.log("Song paused:", song.paused); // Debugging-Zeile
                 if (song.paused) {
                     song.play();
                     ctrlbutton.textContent = "Pause";
@@ -148,6 +149,8 @@
                     waveMenu.classList.remove('playing');
                 }
             }
+
+
 
             function prevTrack() {
                 if (isShuffleMode && songHistory.length > 0) {
