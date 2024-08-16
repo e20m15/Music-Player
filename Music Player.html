@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://kit.fontawesome.com/c4254e24a8.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="music-player">
+            <h1><strong>Music-Player</strong></h1>
+
+            <label class="bar" for="check">
+                <input type="checkbox" id="check">
+                <span class="top"></span>
+                <span class="middle"></span>
+                <span class="bottom"></span>
+            </label>
+            <div id="popup" class="popup">
+                <div class="popup-content">
+                    <h2>Liste</h2>
+                    <ul id="song-list"></ul>
+                </div>
+            </div>
+
+            <label for="switch" class="switch">
+                <input id="switch" type="checkbox" />
+                <span class="slider"></span>
+                <span class="decoration"></span>
+            </label>
+
+            <div class="image-container">
+                <img src="img/Ebru Gündeş - Âşık.png" class="song-img" alt="Song Image" id="img-1">
+                <img src="img/Atiye - Salla.png" class="song-img" alt="Song Image" id="img-2">
+                <img src="img/Semicenk - Mesafe.png" class="song-img" alt="Song Image" id="img-3">
+                <img src="img/Can Toğrulca - Boș Yere.png" class="song-img" alt="Song Image" id="img-4">
+                <img src="img/Semicenk - Batık Gemi.png" class="song-img" alt="Song Image" id="img-5">
+                <img src="img/Reynmen - Renklensin.png" class="song-img" alt="Song Image" id="img-6">
+                <img src="img/Semicenk & Rast - Canın Sağ Olsun.png" class="song-img" alt="Song Image" id="img-7">
+                <img src="img/Semicenk - İlkbaharım Kışa Döndü.png" class="song-img" alt="Song Image" id="img-8">
+            </div>
+            <div class="text" id="current-song-title"><span id="song-title">-Musik Auswählen-</span></div>
+            <div class="wave-container">
+                <ul class="wave-menu">
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                </ul>
+            </div>
+
+            <audio id="song">
+                <source src="" type="audio/mp3">
+            </audio>
+            <input type="range" value="0" id="progress">
+
+            <div class="controls">
+                <nav>
+                    <div class="circle" onclick="prevTrack()">&lt;</div>
+                    <div class="circlee" onclick="playPause()" id="ctrlbutton">Play</div>
+                    <div class="circle" onclick="nextTrack()">&gt;</div>
+                </nav>
+            </div>
+            <div class="circlemix" onclick="toggleMix()" id="mixbutton">Mix</div>
+        </div>
+    </div>
+    
+    <script>
+        const themeSwitch = document.getElementById('switch');
+        themeSwitch.addEventListener('change', () => {
+            if (themeSwitch.checked) {
+                document.body.style.backgroundColor = '#2F4F4F';
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.style.backgroundColor = '#FAF3E0';
+                document.body.classList.remove('dark-mode');
+            }
+        });
+
+        const songs = [
+            {"src": "mp3/Ebru Gündeş - Âşık.mp3", "title": "Ebru Gündeş - Âşık", "imgId": "img-1"},
+            {"src": "mp3/Atiye - Salla.mp3", "title": "Atiye - Salla", "imgId": "img-2"},
+            {"src": "mp3/Semicenk - Mesafe.mp3", "title": "Semicenk - Mesafe", "imgId": "img-3"},
+            {"src": "mp3/Can Toğrulca - Boș Yere.mp3", "title": "Can Toğrulca - Boș Yere", "imgId": "img-4"},
+            {"src": "mp3/Semicenk - Batık Gemi.mp3", "title": "Semicenk - Batık Gemi", "imgId": "img-5"},
+            {"src": "mp3/Reynmen - Renklensin.mp3", "title": "Reynmen - Renklensin", "imgId": "img-6"},
+            {"src": "mp3/Semicenk & Rast - Canın Sağ Olsun.mp3", "title": "Semicenk & Rast - Canın Sağ Olsun", "imgId": "img-7"},
+            {"src": "mp3/Semicenk - İlkbaharım Kışa Döndü.mp3", "title": "Semicenk - İlkbaharım Kışa Döndü", "imgId": "img-8"},
+        ];
+
+        let currentSongIndex = 0;
+        let isShuffleMode = false;
+        let songHistory = [];
+        const mixbutton = document.getElementById("mixbutton");
+        const progress = document.getElementById("progress");
+        const song = document.getElementById("song");
+        const ctrlbutton = document.getElementById("ctrlbutton");
+        const songTitle = document.getElementById("song-title");
+        const waveMenu = document.querySelector(".wave-menu");
+        const check = document.getElementById('check');
+        const popup = document.getElementById('popup');
+        const songList = document.getElementById('song-list');
+
+        song.onloadedmetadata = function() {
+            progress.max = song.duration;
+            progress.value = song.currentTime;
+        };
+
+        progress.oninput = function() {
+            song.currentTime = progress.value;
+        };
+
+        progress.onchange = function() {
+            song.play();
+        };
+
+        song.addEventListener('timeupdate', () => {
+            progress.value = song.currentTime;
+        });
+
+        function toggleMix() {
+            isShuffleMode = !isShuffleMode;
+            songHistory = []; // Leere die Historie, wenn der Modus gewechselt wird.
+            mixbutton.textContent = isShuffleMode ? "Nex" : "Mix";
+        }
+
+        function shuffleAndPlay() {
+            if (isShuffleMode) {
+                songHistory.push(currentSongIndex);
+                currentSongIndex = Math.floor(Math.random() * songs.length);
+                updateSong();
+            }
+        }
+
+        function playPause() {
+            if (song.paused) {
+                song.play();
+                ctrlbutton.textContent = "Pause";
+                waveMenu.classList.add('playing');
+            } else {
+                song.pause();
+                ctrlbutton.textContent = "Play";
+                waveMenu.classList.remove('playing');
+            }
+        }
+
+        function prevTrack() {
+            if (isShuffleMode && songHistory.length > 0) {
+                currentSongIndex = songHistory.pop(); // Hole den letzten Index aus der Historie
+            } else {
+                currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+            }
+            updateSong();
+        }
+
+        function nextTrack() {
+            if (isShuffleMode) {
+                shuffleAndPlay();
+            } else {
+                currentSongIndex = (currentSongIndex + 1) % songs.length;
+                updateSong();
+            }
+        }
+
+        function updateSong() {
+            let songData = songs[currentSongIndex];
+            song.src = songData.src;
+            songTitle.textContent = songData.title;
+            song.load();
+            song.play();
+            ctrlbutton.textContent = "Pause";
+            waveMenu.classList.add('playing');
+            document.querySelectorAll('.song-img').forEach(img => img.style.display = 'none');
+            document.getElementById(songData.imgId).style.display = 'block';
+            updateSongListHighlight();
+        }
+
+        function updateSongListHighlight() {
+            document.querySelectorAll('#song-list li').forEach((li, index) => {
+                li.classList.remove('current-song');
+                if (index === currentSongIndex) {
+                    li.classList.add('current-song');
+                }
+            });
+        }
+
+        function checkSongEnd() {
+            if (song.currentTime >= song.duration - 0.5) {
+                nextTrack();
+            }
+        }
+
+        setInterval(checkSongEnd, 1000);
+
+        song.onended = function() {
+            nextTrack(); 
+        };
+
+        function populateSongList() {
+            songList.innerHTML = '';  // Liste zurücksetzen
+            const sortedSongs = [...songs].sort((a, b) => a.title.localeCompare(b.title));
+            sortedSongs.forEach((song, index) => {
+                const li = document.createElement('li');
+                li.textContent = song.title;  // Nur den Titel anzeigen
+                if (index === currentSongIndex) {
+                    li.classList.add('current-song');
+                }
+                li.addEventListener('click', () => {
+                    currentSongIndex = songs.findIndex(s => s.title === song.title); // Finde den Original-Index
+                    updateSong();
+                    popup.style.display = 'none';
+                    check.checked = false;
+                });
+
+                songList.appendChild(li);
+            });
+        }
+
+
+        check.addEventListener('change', () => {
+            if (check.checked) {
+                populateSongList();
+                popup.style.display = 'flex';
+            } else {
+                popup.style.display = 'none';
+            }
+        });
+
+        updateSong();
+    </script>
+</body>
+</html>
